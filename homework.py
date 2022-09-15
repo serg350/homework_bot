@@ -5,6 +5,7 @@ import telegram
 import time
 
 from dotenv import load_dotenv
+from exceptions import PracticumException
 
 load_dotenv()
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
@@ -29,17 +30,16 @@ logging.basicConfig(
 )
 
 
-class PracticumException(Exception):
-    """Исключения бота."""
-
-    pass
-
-
 def send_message(bot, message):
     """отправляет сообщение в Telegram чат."""
-    log = message.replace('\n', '')
-    logging.info(f"Отправка сообщения в телеграм: {log}")
-    return bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    try:
+        log = message.replace('\n', '')
+        logging.info(f"Начата отправка сообщения в телеграм: {log}")
+        bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    except PracticumException as error:
+        logging.critical(f"Ошибка отправки сообщения {error}")
+    else:
+        logging.info("Сообщение отправлено")
 
 
 def get_api_answer(current_timestamp):
@@ -65,12 +65,20 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """проверяет ответ API на корректность."""
     logging.debug("Проверка ответа API на корректность")
+    if not isinstance(response, dict):
+        raise PracticumException("response не является словарем")
+    homeworks = response.get("homeworks")
+    print(response['homeworks'])
+    if not ("homeworks", "current_date") in homeworks:
+        print(homeworks)
+        raise PracticumException("homeworks или current_date присутсвует в response")
+
     if response['homeworks'] is None:
         raise PracticumException("Задания не обнаружены")
     if not isinstance(response['homeworks'], list):
         raise PracticumException("response['homeworks'] не является списком")
     logging.debug("API проверен на корректность")
-    return response['homeworks']
+    return homeworks
 
 
 def parse_status(homework):
@@ -79,8 +87,10 @@ def parse_status(homework):
     домашней работе статус этой работы
     """
     logging.debug(f"Парсим домашнее задание: {homework}")
-    homework_name = homework['homework_name']
-    homework_status = homework['status']
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
+    if "homework_name" not in homework:
+        print(homework)
     if homework_status not in HOMEWORK_STATUSES:
         raise PracticumException(
             "Обнаружен новый статус, отсутствующий в списке!"
