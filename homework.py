@@ -88,7 +88,7 @@ def parse_status(homework):
 
 
 def check_tokens():
-    """" проверяет доступность переменных окружения """
+    """ проверяет доступность переменных окружения """
 
     if (
             PRACTICUM_TOKEN is None
@@ -100,8 +100,7 @@ def check_tokens():
 
 
 def main():
-    """Основная логика работы бота."""
-    
+    """ Основная логика работы бота. """
     global CHECK_STATUS_ERROR
     logging.debug('Бот запущен!')
     current_timestamp = int(time.time())
