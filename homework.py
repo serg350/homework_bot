@@ -1,4 +1,8 @@
-import logging, time, os, requests, telegram
+import logging
+import os
+import requests
+import telegram
+import time
 
 from dotenv import load_dotenv
 
@@ -27,6 +31,7 @@ logging.basicConfig(
 
 class PracticumException(Exception):
     """Исключения бота."""
+
     pass
 
 
@@ -70,7 +75,7 @@ def check_response(response):
 
 def parse_status(homework):
     """
-    извлекает из информации о конкретной
+    извлекает из информации о конкретной.
     домашней работе статус этой работы
     """
     logging.debug(f"Парсим домашнее задание: {homework}")
