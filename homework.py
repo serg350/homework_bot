@@ -1,9 +1,4 @@
-import logging
-import time
-import os
-
-import requests
-import telegram
+import logging, time, os, requests, telegram
 
 from dotenv import load_dotenv
 
@@ -34,7 +29,6 @@ logging.debug('Бот запущен!')
 
 class PracticumException(Exception):
     """Исключения бота."""
-
     pass
 
 
@@ -50,7 +44,11 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     payload = {'from_date': 0}
     try:
-        homework_statuses = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        homework_statuses = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params=params
+        )
     except ValueError as error:
         raise PracticumException(f"Ошибка в значении {error}")
     except TypeError as error:
