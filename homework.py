@@ -27,11 +27,13 @@ logging.basicConfig(
 
 class PracticumException(Exception):
     """ Исключения бота. """
+
     pass
 
 
 def send_message(bot, message):
     """ отправляет сообщение в Telegram чат """
+
     log = message.replace('\n', '')
     logging.info(f"Отправка сообщения в телеграм: {log}")
     return bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
@@ -39,6 +41,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """ делает запрос к единственному эндпоинту API-сервиса """
+
     logging.info("Получение ответа от сервера")
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
@@ -59,6 +62,7 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """ проверяет ответ API на корректность """
+
     logging.debug("Проверка ответа API на корректность")
     if response['homeworks'] is None:
         raise PracticumException("Задания не обнаружены")
@@ -71,6 +75,7 @@ def check_response(response):
 def parse_status(homework):
     """  извлекает из информации о конкретной
      домашней работе статус этой работы """
+
     logging.debug(f"Парсим домашнее задание: {homework}")
     homework_name = homework['homework_name']
     homework_status = homework['status']
@@ -84,6 +89,7 @@ def parse_status(homework):
 
 def check_tokens():
     """" проверяет доступность переменных окружения """
+
     if (
             PRACTICUM_TOKEN is None
             or TELEGRAM_TOKEN is None
@@ -95,6 +101,7 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
+    
     global CHECK_STATUS_ERROR
     logging.debug('Бот запущен!')
     current_timestamp = int(time.time())
