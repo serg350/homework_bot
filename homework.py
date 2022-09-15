@@ -12,6 +12,7 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
+CHECK_STATUS_ERROR = True
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -49,7 +50,7 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     payload = {'from_date': 0}
     try:
-        homework_statuses = requests.get(ENDPOINT, headers=HEADERS, params=payload)
+        homework_statuses = requests.get(ENDPOINT, headers=HEADERS, params=params)
     except ValueError as error:
         raise PracticumException(f"Ошибка в значении {error}")
     except TypeError as error:
@@ -93,6 +94,7 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
+    global CHECK_STATUS_ERROR
     current_timestamp = int(time.time())
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     if not check_tokens():
@@ -100,6 +102,7 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
+            CHECK_STATUS_ERROR == True
             homeworks = check_response(response)
             logging.info("Список домашних работ получен")
             if ((type(homeworks) is list)
@@ -113,9 +116,15 @@ def main():
             time.sleep(RETRY_TIME)
         except PracticumException as error:
             logging.critical(f"Эндпоинт не доступен: {error}")
+            if CHECK_STATUS_ERROR == True:
+                send_message(bot, f"Эндпоинт не доступен: {error}")
+            CHECK_STATUS_ERROR = False
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.critical(message)
+            if CHECK_STATUS_ERROR == True:
+                send_message(bot, message)
+            CHECK_STATUS_ERROR = False
             time.sleep(RETRY_TIME)
         else:
             time.sleep(RETRY_TIME)
