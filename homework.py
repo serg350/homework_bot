@@ -24,25 +24,24 @@ logging.basicConfig(
     filename='main.log'
 )
 
-logging.debug('Бот запущен!')
-
 
 class PracticumException(Exception):
-    """Исключения бота."""
+    """ Исключения бота. """
     pass
 
 
 def send_message(bot, message):
+    """ отправляет сообщение в Telegram чат """
     log = message.replace('\n', '')
     logging.info(f"Отправка сообщения в телеграм: {log}")
     return bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
 
 
 def get_api_answer(current_timestamp):
+    """ делает запрос к единственному эндпоинту API-сервиса """
     logging.info("Получение ответа от сервера")
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    payload = {'from_date': 0}
     try:
         homework_statuses = requests.get(
             ENDPOINT,
@@ -59,6 +58,7 @@ def get_api_answer(current_timestamp):
 
 
 def check_response(response):
+    """ проверяет ответ API на корректность """
     logging.debug("Проверка ответа API на корректность")
     if response['homeworks'] is None:
         raise PracticumException("Задания не обнаружены")
@@ -69,6 +69,8 @@ def check_response(response):
 
 
 def parse_status(homework):
+    """  извлекает из информации о конкретной
+     домашней работе статус этой работы """
     logging.debug(f"Парсим домашнее задание: {homework}")
     homework_name = homework['homework_name']
     homework_status = homework['status']
@@ -81,6 +83,7 @@ def parse_status(homework):
 
 
 def check_tokens():
+    """" проверяет доступность переменных окружения """
     if (
             PRACTICUM_TOKEN is None
             or TELEGRAM_TOKEN is None
@@ -93,6 +96,7 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     global CHECK_STATUS_ERROR
+    logging.debug('Бот запущен!')
     current_timestamp = int(time.time())
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     if not check_tokens():
@@ -100,7 +104,7 @@ def main():
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            CHECK_STATUS_ERROR == True
+            CHECK_STATUS_ERROR = True
             homeworks = check_response(response)
             logging.info("Список домашних работ получен")
             if ((type(homeworks) is list)
@@ -114,13 +118,13 @@ def main():
             time.sleep(RETRY_TIME)
         except PracticumException as error:
             logging.critical(f"Эндпоинт не доступен: {error}")
-            if CHECK_STATUS_ERROR == True:
+            if CHECK_STATUS_ERROR:
                 send_message(bot, f"Эндпоинт не доступен: {error}")
             CHECK_STATUS_ERROR = False
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             logging.critical(message)
-            if CHECK_STATUS_ERROR == True:
+            if CHECK_STATUS_ERROR:
                 send_message(bot, message)
             CHECK_STATUS_ERROR = False
             time.sleep(RETRY_TIME)
