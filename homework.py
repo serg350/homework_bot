@@ -14,7 +14,6 @@ PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 
-CHECK_STATUS_ERROR = True
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -111,7 +110,7 @@ def check_tokens():
 
 def main():
     """Основная логика работы бота."""
-    global CHECK_STATUS_ERROR
+    CHECK_STATUS_ERROR = True
     if not check_tokens():
         logging.critical("Отсутствует переменная(-ные) окружения")
         sys.exit("Отсутствует переменная(-ные) окружения")
@@ -130,7 +129,6 @@ def main():
             else:
                 logging.info("Задания не обнаружены")
             current_timestamp = response['current_date']
-            time.sleep(RETRY_TIME)
         except PracticumException as error:
             logging.critical(f"Эндпоинт не доступен: {error}")
             if CHECK_STATUS_ERROR:
@@ -142,8 +140,7 @@ def main():
             if CHECK_STATUS_ERROR:
                 send_message(bot, message)
             CHECK_STATUS_ERROR = False
-            time.sleep(RETRY_TIME)
-        else:
+        finally:
             time.sleep(RETRY_TIME)
 
 
