@@ -35,17 +35,17 @@ def send_message(bot, message):
     """отправляет сообщение в Telegram чат."""
     try:
         log = message.replace('\n', '')
-        logging.info(f"Начата отправка сообщения в телеграм: {log}")
+        logging.info(f'Начата отправка сообщения в телеграм: {log}')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except PracticumException as error:
-        logging.critical(f"Ошибка отправки сообщения {error}")
+        logging.critical(f'Ошибка отправки сообщения {error}')
 
 
 def get_api_answer(current_timestamp):
     """делает запрос к единственному эндпоинту API-сервиса."""
-    logging.info("Получение ответа от сервера")
+    logging.info('Получение ответа от сервера')
     timestamp = current_timestamp or int(time.time())
-    params = {'from_date': 0}
+    params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
             ENDPOINT,
@@ -53,27 +53,27 @@ def get_api_answer(current_timestamp):
             params=params
         )
     except ValueError as error:
-        raise PracticumException(f"Ошибка в значении {error}")
+        raise PracticumException(f'Ошибка в значении {error}')
     except TypeError as error:
-        raise PracticumException(f"Не корректный тип данных {error}")
+        raise PracticumException(f'Не корректный тип данных {error}')
     if homework_statuses.status_code != 200:
-        raise PracticumException("Сервер yandex не доступен")
+        raise PracticumException('Сервер yandex не доступен')
     return homework_statuses.json()
 
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    logging.debug("Проверка ответа API на корректность")
+    logging.debug('Проверка ответа API на корректность')
     homeworks = response['homeworks']
-    if "homeworks" in homeworks or "current_date" in homeworks:
+    if 'homeworks' in homeworks or 'current_date' in homeworks:
         raise PracticumException(
-            "homeworks или current_date присутсвует в response"
+            'homeworks или current_date присутсвует в response'
         )
     if response['homeworks'] is None:
-        raise PracticumException("Задания не обнаружены")
+        raise PracticumException('Задания не обнаружены')
     if not isinstance(response['homeworks'], list):
         raise PracticumException("response['homeworks'] не является списком")
-    logging.debug("API проверен на корректность")
+    logging.debug('API проверен на корректность')
     return homeworks
 
 
@@ -82,16 +82,16 @@ def parse_status(homework):
     извлекает из информации о конкретной.
     домашней работе статус этой работы
     """
-    logging.debug(f"Парсим домашнее задание: {homework}")
+    logging.debug(f'Парсим домашнее задание: {homework}')
     homework_name = homework['homework_name']
     homework_status = homework['status']
-    if "homework_name" in homework_name:
+    if 'homework_name' in homework_name:
         raise PracticumException(
-            "Обнаружен ключ homework_name в словаре!"
+            'Обнаружен ключ homework_name в словаре!'
         )
-    if "homework_status" in homework_status:
+    if 'homework_status' in homework_status:
         raise PracticumException(
-            "Обнаружен ключ homework_status в словаре!"
+            'Обнаружен ключ homework_status в словаре!'
         )
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -110,8 +110,8 @@ def main():
     """Основная логика работы бота."""
     CHECK_STATUS_ERROR = True
     if not check_tokens():
-        logging.critical("Отсутствует переменная(-ные) окружения")
-        sys.exit("Отсутствует переменная(-ные) окружения")
+        logging.critical('Отсутствует переменная(-ные) окружения')
+        sys.exit('Отсутствует переменная(-ные) окружения')
     logging.debug('Бот запущен!')
     current_timestamp = int(time.time())
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
@@ -120,17 +120,17 @@ def main():
             response = get_api_answer(current_timestamp)
             CHECK_STATUS_ERROR = True
             homeworks = check_response(response)
-            logging.info("Список домашних работ получен")
+            logging.info('Список домашних работ получен')
             if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
-                logging.info("Сообщение отправлено")
+                logging.info('Сообщение отправлено')
             else:
-                logging.info("Задания не обнаружены")
+                logging.info('Задания не обнаружены')
             current_timestamp = response['current_date']
         except PracticumException as error:
-            logging.critical(f"Эндпоинт не доступен: {error}")
+            logging.critical(f'Эндпоинт не доступен: {error}')
             if CHECK_STATUS_ERROR:
-                send_message(bot, f"Эндпоинт не доступен: {error}")
+                send_message(bot, f'Эндпоинт не доступен: {error}')
             CHECK_STATUS_ERROR = False
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
