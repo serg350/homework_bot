@@ -66,9 +66,7 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """проверяет ответ API на корректность."""
     logging.debug("Проверка ответа API на корректность")
-    if not isinstance(response, dict):
-        raise PracticumException("response не является словарем")
-    homeworks = response.get("homeworks")
+    homeworks = response['homeworks']
     if "homeworks" in homeworks or "current_date" in homeworks:
         raise PracticumException(
             "homeworks или current_date присутсвует в response"
@@ -87,8 +85,9 @@ def parse_status(homework):
     домашней работе статус этой работы
     """
     logging.debug(f"Парсим домашнее задание: {homework}")
-    homework_name = homework.get('homework_name')
-    homework_status = homework.get('status')
+    homework_name = homework['homework_name']
+    homework_status = homework['status']
+    print(homework)
     if "homework_name" in homework_name:
         raise PracticumException(
             "Обнаружен ключ homework_name в словаре!"
