@@ -39,15 +39,13 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except PracticumException as error:
         logging.critical(f"Ошибка отправки сообщения {error}")
-    else:
-        logging.info("Сообщение отправлено")
 
 
 def get_api_answer(current_timestamp):
     """делает запрос к единственному эндпоинту API-сервиса."""
     logging.info("Получение ответа от сервера")
     timestamp = current_timestamp or int(time.time())
-    params = {'from_date': timestamp}
+    params = {'from_date': 0}
     try:
         homework_statuses = requests.get(
             ENDPOINT,
@@ -87,7 +85,6 @@ def parse_status(homework):
     logging.debug(f"Парсим домашнее задание: {homework}")
     homework_name = homework['homework_name']
     homework_status = homework['status']
-    print(homework)
     if "homework_name" in homework_name:
         raise PracticumException(
             "Обнаружен ключ homework_name в словаре!"
