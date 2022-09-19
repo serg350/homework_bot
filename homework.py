@@ -1,5 +1,7 @@
 import logging
 import os
+import sys
+
 import requests
 import telegram
 import time
@@ -68,11 +70,8 @@ def check_response(response):
     if not isinstance(response, dict):
         raise PracticumException("response не является словарем")
     homeworks = response.get("homeworks")
-    print(response['homeworks'])
-    if not ("homeworks", "current_date") in homeworks:
-        print(homeworks)
+    if "homeworks" in homeworks or "current_date" in homeworks:
         raise PracticumException("homeworks или current_date присутсвует в response")
-
     if response['homeworks'] is None:
         raise PracticumException("Задания не обнаружены")
     if not isinstance(response['homeworks'], list):
@@ -89,11 +88,13 @@ def parse_status(homework):
     logging.debug(f"Парсим домашнее задание: {homework}")
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
-    if "homework_name" not in homework:
-        print(homework)
-    if homework_status not in HOMEWORK_STATUSES:
+    if "homework_name" in homework_name:
         raise PracticumException(
-            "Обнаружен новый статус, отсутствующий в списке!"
+            "Обнаружен ключ homework_name в словаре!"
+        )
+    if "homework_status" in homework_status:
+        raise PracticumException(
+            "Обнаружен ключ homework_status в словаре!"
         )
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -101,32 +102,29 @@ def parse_status(homework):
 
 def check_tokens():
     """проверяет доступность переменных окружения."""
-    if (
-            PRACTICUM_TOKEN is None
-            or TELEGRAM_TOKEN is None
-            or TELEGRAM_CHAT_ID is None
-    ):
-        return False
-    return True
+    return all(
+        (PRACTICUM_TOKEN,
+         TELEGRAM_TOKEN,
+         TELEGRAM_CHAT_ID)
+    )
 
 
 def main():
     """Основная логика работы бота."""
     global CHECK_STATUS_ERROR
+    if not check_tokens():
+        logging.critical("Отсутствует переменная(-ные) окружения")
+        sys.exit("Отсутствует переменная(-ные) окружения")
     logging.debug('Бот запущен!')
     current_timestamp = int(time.time())
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    if not check_tokens():
-        logging.critical("Отсутствует переменная(-ные) окружения")
     while True:
         try:
             response = get_api_answer(current_timestamp)
             CHECK_STATUS_ERROR = True
             homeworks = check_response(response)
             logging.info("Список домашних работ получен")
-            if ((type(homeworks) is list)
-                    and (len(homeworks) > 0)
-                    and homeworks):
+            if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
                 logging.info("Сообщение отправлено")
             else:
