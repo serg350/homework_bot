@@ -70,7 +70,9 @@ def check_response(response):
         raise PracticumException("response не является словарем")
     homeworks = response.get("homeworks")
     if "homeworks" in homeworks or "current_date" in homeworks:
-        raise PracticumException("homeworks или current_date присутсвует в response")
+        raise PracticumException(
+            "homeworks или current_date присутсвует в response"
+        )
     if response['homeworks'] is None:
         raise PracticumException("Задания не обнаружены")
     if not isinstance(response['homeworks'], list):
