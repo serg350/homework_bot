@@ -88,13 +88,14 @@ def parse_status(homework):
     домашней работе статус этой работы
     """
     logging.debug(f'Парсим домашнее задание: {homework}')
+    print(homework)
     if 'homework_name' not in homework:
-        raise PracticumException(
+        raise KeyError(
             'Не обнаружен ключ homework в словаре!'
         )
     homework_name = homework['homework_name']
     if 'status' not in homework:
-        raise PracticumException(
+        raise KeyError(
             'Не обнаружен ключ homework в словаре!'
         )
     homework_status = homework['status']
