@@ -1,3 +1,4 @@
+import http
 import logging
 import os
 import sys
@@ -8,6 +9,7 @@ import time
 
 from dotenv import load_dotenv
 from exceptions import PracticumException
+from http import HTTPStatus
 
 load_dotenv()
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
@@ -38,7 +40,7 @@ def send_message(bot, message):
         logging.info(f'Начата отправка сообщения в телеграм: {log}')
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except PracticumException as error:
-        logging.critical(f'Ошибка отправки сообщения {error}')
+        raise PracticumException(f'Ошибка отправки сообщения {error}')
 
 
 def get_api_answer(current_timestamp):
@@ -56,7 +58,7 @@ def get_api_answer(current_timestamp):
         raise PracticumException(f'Ошибка в значении {error}')
     except TypeError as error:
         raise PracticumException(f'Не корректный тип данных {error}')
-    if homework_statuses.status_code != 200:
+    if homework_statuses.status_code != HTTPStatus.OK:
         raise PracticumException('Сервер yandex не доступен')
     return homework_statuses.json()
 
@@ -64,13 +66,17 @@ def get_api_answer(current_timestamp):
 def check_response(response):
     """проверяет ответ API на корректность."""
     logging.debug('Проверка ответа API на корректность')
+    if not isinstance(response, dict):
+        raise TypeError('response не является словарем')
+    if 'homeworks' not in response:
+        raise PracticumException(
+            'homeworks отсутсвует в response'
+        )
     homeworks = response['homeworks']
     if 'homeworks' in homeworks or 'current_date' in homeworks:
         raise PracticumException(
             'homeworks или current_date присутсвует в response'
         )
-    if response['homeworks'] is None:
-        raise PracticumException('Задания не обнаружены')
     if not isinstance(response['homeworks'], list):
         raise PracticumException("response['homeworks'] не является списком")
     logging.debug('API проверен на корректность')
@@ -83,15 +89,20 @@ def parse_status(homework):
     домашней работе статус этой работы
     """
     logging.debug(f'Парсим домашнее задание: {homework}')
-    homework_name = homework['homework_name']
-    homework_status = homework['status']
-    if 'homework_name' in homework_name:
+    if 'homework_name' not in homework:
         raise PracticumException(
-            'Обнаружен ключ homework_name в словаре!'
+            'Не обнаружен ключ homework в словаре!'
         )
-    if 'homework_status' in homework_status:
+    homework_name = homework['homework_name']
+    if 'status' not in homework:
         raise PracticumException(
-            'Обнаружен ключ homework_status в словаре!'
+            'Не обнаружен ключ homework в словаре!'
+        )
+    homework_status = homework['status']
+    if homework_status not in HOMEWORK_STATUSES:
+        raise PracticumException(
+            f'{homework_status} отсутствует в списке статусов'
+            f'домашних работ'
         )
     verdict = HOMEWORK_STATUSES[homework_status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -120,6 +131,8 @@ def main():
             response = get_api_answer(current_timestamp)
             CHECK_STATUS_ERROR = True
             homeworks = check_response(response)
+            if homeworks is None:
+                raise PracticumException('Задания не обнаружены')
             logging.info('Список домашних работ получен')
             if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
