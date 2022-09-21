@@ -41,7 +41,7 @@ def send_message(bot, message):
     except PracticumException as error:
         raise PracticumException(f'Ошибка отправки сообщения {error}')
     else:
-        logging.info(f'Сообщение отправление')
+        logging.info('Сообщение отправлено')
 
 
 def get_api_answer(current_timestamp):
