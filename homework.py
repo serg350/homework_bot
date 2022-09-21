@@ -40,6 +40,8 @@ def send_message(bot, message):
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except PracticumException as error:
         raise PracticumException(f'Ошибка отправки сообщения {error}')
+    else:
+        logging.info(f'Сообщение отправление')
 
 
 def get_api_answer(current_timestamp):
@@ -67,15 +69,11 @@ def check_response(response):
     logging.debug('Проверка ответа API на корректность')
     if not isinstance(response, dict):
         raise TypeError('response не является словарем')
-    if 'homeworks' not in response:
+    if 'homeworks' not in response or 'current_date' not in response:
         raise PracticumException(
             'homeworks отсутсвует в response'
         )
     homeworks = response['homeworks']
-    if 'homeworks' in homeworks or 'current_date' in homeworks:
-        raise PracticumException(
-            'homeworks или current_date присутсвует в response'
-        )
     if not isinstance(response['homeworks'], list):
         raise PracticumException("response['homeworks'] не является списком")
     logging.debug('API проверен на корректность')
@@ -88,7 +86,6 @@ def parse_status(homework):
     домашней работе статус этой работы
     """
     logging.debug(f'Парсим домашнее задание: {homework}')
-    print(homework)
     if 'homework_name' not in homework:
         raise KeyError(
             'Не обнаружен ключ homework в словаре!'
@@ -131,14 +128,11 @@ def main():
             response = get_api_answer(current_timestamp)
             CHECK_STATUS_ERROR = True
             homeworks = check_response(response)
-            if homeworks is None:
-                raise PracticumException('Задания не обнаружены')
-            logging.info('Список домашних работ получен')
             if homeworks:
                 send_message(bot, parse_status(homeworks[0]))
                 logging.info('Сообщение отправлено')
             else:
-                logging.info('Задания не обнаружены')
+                logging.debug('Задания не обнаружены')
             current_timestamp = response['current_date']
         except PracticumException as error:
             logging.critical(f'Эндпоинт не доступен: {error}')
